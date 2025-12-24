@@ -1,0 +1,312 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: hidden;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+canvas {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+}
+
+/* Instructions Panel */
+.instructions {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+    padding: 40px 50px;
+    border-radius: 20px;
+    color: white;
+    text-align: center;
+    z-index: 100;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    max-width: 600px;
+}
+
+.instructions.hidden {
+    display: none;
+}
+
+.instructions h1 {
+    font-size: 3em;
+    margin-bottom: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.instructions p {
+    font-size: 1.2em;
+    margin-bottom: 30px;
+    opacity: 0.9;
+}
+
+.controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 20px;
+    text-align: left;
+}
+
+.control-group h3 {
+    color: #667eea;
+    margin-bottom: 10px;
+    font-size: 1.1em;
+}
+
+.control-group ul {
+    list-style: none;
+}
+
+.control-group li {
+    margin: 8px 0;
+    font-size: 0.95em;
+    opacity: 0.85;
+}
+
+kbd {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.9em;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Crosshair */
+.crosshair {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 50;
+}
+
+.crosshair.hidden {
+    display: none;
+}
+
+.crosshair-dot {
+    width: 4px;
+    height: 4px;
+    background: white;
+    border-radius: 50%;
+    box-shadow:
+        0 0 2px 2px rgba(0, 0, 0, 0.5),
+        0 0 0 1px white;
+}
+
+.crosshair::before,
+.crosshair::after {
+    content: '';
+    position: absolute;
+    background: white;
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+}
+
+.crosshair::before {
+    width: 12px;
+    height: 2px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.crosshair::after {
+    width: 2px;
+    height: 12px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* FPS Counter */
+.fps-counter {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #0f0;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-family: monospace;
+    font-size: 14px;
+    z-index: 10;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(0, 255, 0, 0.3);
+}
+
+.fps-counter.hidden {
+    display: none;
+}
+
+/* Cursor */
+body.locked {
+    cursor: none;
+}
+
+/* Health Bar */
+.health-bar {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    padding: 15px 30px;
+    border-radius: 12px;
+    z-index: 10;
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    min-width: 300px;
+}
+
+.health-bar.hidden {
+    display: none;
+}
+
+.health-label {
+    color: white;
+    font-size: 14px;
+    margin-bottom: 5px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.health-bar-bg {
+    width: 100%;
+    height: 20px;
+    background: rgba(50, 50, 50, 0.8);
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.health-bar-fill {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, #00ff00, #00cc00);
+    border-radius: 10px;
+    transition: width 0.3s ease, background 0.3s ease;
+}
+
+.health-text {
+    color: white;
+    font-size: 12px;
+    text-align: center;
+    margin-top: 5px;
+    font-family: monospace;
+}
+
+/* Objective Panel */
+.objective {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 20px;
+    border-radius: 12px;
+    color: white;
+    z-index: 10;
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    min-width: 300px;
+}
+
+.objective.hidden {
+    display: none;
+}
+
+.objective h3 {
+    margin: 0 0 10px 0;
+    color: #667eea;
+    font-size: 1.2em;
+}
+
+.objective p {
+    margin: 0 0 15px 0;
+    font-size: 0.9em;
+    opacity: 0.9;
+}
+
+.boss-status {
+    font-size: 0.9em;
+}
+
+.boss-status div {
+    margin: 5px 0;
+    padding: 5px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 5px;
+}
+
+.boss-status span {
+    color: #ff4444;
+    font-weight: bold;
+}
+
+.boss-status span.defeated {
+    color: #44ff44;
+}
+
+/* Overlays */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    color: white;
+}
+
+.overlay.hidden {
+    display: none;
+}
+
+.overlay h1 {
+    font-size: 4em;
+    margin-bottom: 20px;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+}
+
+.overlay p {
+    font-size: 1.5em;
+    margin-bottom: 30px;
+    opacity: 0.9;
+}
+
+.overlay button {
+    padding: 15px 40px;
+    font-size: 1.2em;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.overlay button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.5);
+}

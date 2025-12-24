@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blue Escape - First Person Voxel Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- Instructions Panel -->
+    <div id="instructions" class="instructions">
+        <h1>🎮 Blue Escape</h1>
+        <p>Click to start playing!</p>
+        <div class="controls">
+            <div class="control-group">
+                <h3>Movement</h3>
+                <ul>
+                    <li><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> - Move</li>
+                    <li><kbd>Space</kbd> - Jump</li>
+                    <li><kbd>Mouse</kbd> - Look around</li>
+                </ul>
+            </div>
+            <div class="control-group">
+                <h3>Combat</h3>
+                <ul>
+                    <li><kbd>Left Click</kbd> - Shoot projectile</li>
+                    <li>Defeat both bosses!</li>
+                </ul>
+            </div>
+            <div class="control-group">
+                <h3>Other</h3>
+                <ul>
+                    <li><kbd>ESC</kbd> - Pause / Release mouse</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Crosshair -->
+    <div id="crosshair" class="crosshair">
+        <div class="crosshair-dot"></div>
+    </div>
+
+    <!-- Player Health Bar -->
+    <div id="player-health" class="health-bar">
+        <div class="health-label">Health</div>
+        <div class="health-bar-bg">
+            <div id="player-health-fill" class="health-bar-fill"></div>
+        </div>
+        <div id="player-health-text" class="health-text">100 / 100</div>
+    </div>
+
+    <!-- Objective -->
+    <div id="objective" class="objective">
+        <h3>🎯 Objective</h3>
+        <p>Defeat the Fire Dragon and Fire Jellyfish to unlock the treasure!</p>
+        <div class="boss-status">
+            <div>🐉 Fire Dragon: <span id="dragon-status">Alive</span></div>
+            <div>🪼 Fire Jellyfish: <span id="jellyfish-status">Alive</span></div>
+        </div>
+    </div>
+
+    <!-- Victory Overlay -->
+    <div id="victory" class="overlay hidden">
+        <h1>🎉 Victory!</h1>
+        <p>You defeated all the bosses and claimed the treasure!</p>
+        <button onclick="location.reload()">Play Again</button>
+    </div>
+
+    <!-- Death Overlay -->
+    <div id="death" class="overlay hidden">
+        <h1>💀 You Died</h1>
+        <p>The bosses were too powerful...</p>
+        <button onclick="location.reload()">Try Again</button>
+    </div>
+
+    <!-- FPS Counter -->
+    <div id="fps" class="fps-counter">FPS: 60</div>
+
+    <!-- Three.js from CDN -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+
+    <!-- Game Scripts -->
+    <script type="module" src="world.js"></script>
+    <script type="module" src="entities.js"></script>
+    <script type="module" src="combat.js"></script>
+    <script type="module" src="controls.js"></script>
+    <script type="module" src="game.js"></script>
+</body>
+
+</html>
