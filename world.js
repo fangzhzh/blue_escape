@@ -40,6 +40,9 @@ export class World {
                     Math.sin(x * 0.05 + z * 0.05) * 1
                 );
 
+                // Ensure minimum height to avoid holes
+                height = Math.max(1, height);
+
                 // Add mountains in outer areas
                 if (isMountainous) {
                     height += Math.floor(Math.random() * 3) + 2;

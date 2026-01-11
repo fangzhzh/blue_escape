@@ -414,3 +414,258 @@ export class TreasureBox extends Entity {
         return true;
     }
 }
+
+// Zombie Enemy
+export class Zombie extends Entity {
+    constructor(scene, position) {
+        super(scene, position);
+        this.health = 50;
+        this.maxHealth = 50;
+        this.speed = 3;
+        this.attackCooldown = 0;
+        this.attackRate = 1.5; // Attack every 1.5 seconds
+        this.aggroRange = 15;
+        this.attackRange = 3.5; // Increased for easier combat
+
+        // AI State
+        this.state = 'idle'; // idle, wander, chase
+        this.stateTimer = 0;
+        this.patrolCenter = position.clone();
+        this.wanderTarget = new THREE.Vector3();
+        this.walkSpeed = 1.5;
+        this.runSpeed = 3.5;
+
+        this.createMesh();
+    }
+
+    createMesh() {
+        const group = new THREE.Group();
+
+        // Body
+        const bodyGeometry = new THREE.BoxGeometry(0.8, 1.5, 0.4);
+        const bodyMaterial = new THREE.MeshLambertMaterial({ color: 0x6b8e23 }); // Olive green
+        const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+        body.position.y = 0.75; // Lowered from 1.5
+        group.add(body);
+
+        // Head
+        const headGeometry = new THREE.BoxGeometry(0.6, 0.6, 0.6);
+        const headMaterial = new THREE.MeshLambertMaterial({ color: 0x808080 }); // Gray
+        const head = new THREE.Mesh(headGeometry, headMaterial);
+        head.position.y = 1.75; // Lowered from 2.5
+        group.add(head);
+
+        // Eyes (glowing red)
+        const eyeGeometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+        const eyeMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, emissive: 0xff0000 });
+        const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+        leftEye.position.set(-0.15, 1.75, 0.31);
+        group.add(leftEye);
+        const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+        rightEye.position.set(0.15, 1.75, 0.31);
+        group.add(rightEye);
+
+        // Arms
+        const armGeometry = new THREE.BoxGeometry(0.3, 1.2, 0.3);
+        const leftArm = new THREE.Mesh(armGeometry, bodyMaterial);
+        leftArm.position.set(-0.6, 0.75, 0); // Lowered
+        group.add(leftArm);
+        const rightArm = new THREE.Mesh(armGeometry, bodyMaterial);
+        rightArm.position.set(0.6, 0.75, 0); // Lowered
+        group.add(rightArm);
+
+        // Legs
+        const legGeometry = new THREE.BoxGeometry(0.3, 1.2, 0.3);
+        const leftLeg = new THREE.Mesh(legGeometry, bodyMaterial);
+        leftLeg.position.set(-0.25, -0.3, 0); // Lowered to below body
+        group.add(leftLeg);
+        const rightLeg = new THREE.Mesh(legGeometry, bodyMaterial);
+        rightLeg.position.set(0.25, -0.3, 0); // Lowered to below body
+        group.add(rightLeg);
+
+        group.position.copy(this.position);
+        group.scale.set(0.15, 0.15, 0.15); // Scale down to 15% size
+        this.mesh = group;
+        this.scene.add(this.mesh);
+    }
+
+    update(delta, playerPosition) {
+        if (!this.alive) return;
+
+        const distanceToPlayer = this.distanceTo(playerPosition);
+
+
+        // AI Logic
+        this.stateTimer -= delta;
+
+        // State Machine
+        switch (this.state) {
+            case 'idle':
+                if (this.stateTimer <= 0) {
+                    // Switch to wander
+                    this.state = 'wander';
+                    this.stateTimer = Math.random() * 3 + 2; // Wander for 2-5 seconds
+
+                    // Pick random target nearby
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = Math.random() * 5 + 2;
+                    this.wanderTarget.x = this.position.x + Math.cos(angle) * dist;
+                    this.wanderTarget.z = this.position.z + Math.sin(angle) * dist;
+                    this.wanderTarget.y = this.position.y;
+                }
+
+                // Chance to spot player if close
+                if (distanceToPlayer < this.aggroRange && Math.random() < 0.02) {
+                    this.state = 'chase';
+                }
+                break;
+
+            case 'wander':
+                if (this.stateTimer <= 0) {
+                    this.state = 'idle';
+                    this.stateTimer = Math.random() * 2 + 1; // Idle for 1-3 seconds
+                } else {
+                    // Move towards target
+                    const direction = new THREE.Vector3().subVectors(this.wanderTarget, this.position);
+                    direction.y = 0;
+                    if (direction.length() > 0.1) {
+                        direction.normalize();
+                        this.position.add(direction.multiplyScalar(this.walkSpeed * delta));
+                        this.mesh.rotation.y = Math.atan2(direction.x, direction.z);
+                        this.mesh.rotation.x = Math.sin(Date.now() * 0.005) * 0.05; // Slow bob
+                    } else {
+                        this.state = 'idle'; // Reached target
+                    }
+                }
+
+                // Chance to spot player
+                if (distanceToPlayer < this.aggroRange && Math.random() < 0.05) {
+                    this.state = 'chase';
+                }
+                break;
+
+            case 'chase':
+                if (distanceToPlayer > this.aggroRange * 1.5) {
+                    // Lost player
+                    this.state = 'idle';
+                    this.stateTimer = 2;
+                } else {
+                    // Chase behavior
+                    const direction = new THREE.Vector3().subVectors(playerPosition, this.position);
+                    direction.y = 0;
+                    direction.normalize();
+
+                    this.position.add(direction.multiplyScalar(this.runSpeed * delta));
+                    this.mesh.rotation.y = Math.atan2(direction.x, direction.z);
+                    this.mesh.rotation.x = Math.sin(Date.now() * 0.01) * 0.1; // Fast bob
+                }
+                break;
+        }
+
+        // Update mesh position
+        this.mesh.position.copy(this.position);
+
+        // Attack cooldown
+        this.attackCooldown -= delta;
+    }
+
+    canAttack() {
+        return this.attackCooldown <= 0;
+    }
+
+    attack() {
+        this.attackCooldown = this.attackRate;
+        return 10; // Damage amount
+    }
+
+    onDeath() {
+        super.onDeath();
+    }
+}
+
+// Machine Gun Pickup
+export class MachineGun extends Entity {
+    constructor(scene, position) {
+        super(scene, position);
+        this.health = Infinity; // Can't be destroyed
+        this.rotationSpeed = 1;
+        this.bobPhase = 0;
+
+        this.createMesh();
+    }
+
+    createMesh() {
+        const group = new THREE.Group();
+
+        // Gun barrel
+        const barrelGeometry = new THREE.CylinderGeometry(0.1, 0.1, 1.5, 8);
+        const barrelMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
+        const barrel = new THREE.Mesh(barrelGeometry, barrelMaterial);
+        barrel.rotation.z = Math.PI / 2;
+        barrel.position.x = 0.75;
+        group.add(barrel);
+
+        // Gun body
+        const bodyGeometry = new THREE.BoxGeometry(0.8, 0.4, 0.3);
+        const bodyMaterial = new THREE.MeshLambertMaterial({ color: 0x1a1a1a });
+        const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+        group.add(body);
+
+        // Magazine
+        const magGeometry = new THREE.BoxGeometry(0.2, 0.5, 0.25);
+        const magMaterial = new THREE.MeshLambertMaterial({ color: 0x666666 });
+        const mag = new THREE.Mesh(magGeometry, magMaterial);
+        mag.position.set(0, -0.4, 0);
+        group.add(mag);
+
+        // Stock
+        const stockGeometry = new THREE.BoxGeometry(0.6, 0.3, 0.2);
+        const stock = new THREE.Mesh(stockGeometry, bodyMaterial);
+        stock.position.set(-0.7, 0, 0);
+        group.add(stock);
+
+        // Glow effect
+        const glowGeometry = new THREE.SphereGeometry(0.3, 16, 16);
+        const glowMaterial = new THREE.MeshBasicMaterial({
+            color: 0xffff00,
+            emissive: 0xffff00,
+            transparent: true,
+            opacity: 0.5
+        });
+        const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+        this.glow = glow;
+        group.add(glow);
+
+        group.position.copy(this.position);
+        group.scale.set(1.5, 1.5, 1.5);
+        this.mesh = group;
+        this.scene.add(this.mesh);
+    }
+
+    update(delta, playerPosition) {
+        if (!this.alive) return;
+
+        // Rotate
+        this.mesh.rotation.y += delta * this.rotationSpeed;
+
+        // Bob up and down
+        this.bobPhase += delta * 2;
+        const bobOffset = Math.sin(this.bobPhase) * 0.2;
+        this.mesh.position.y = this.position.y + bobOffset;
+
+        // Pulse glow
+        if (this.glow) {
+            this.glow.material.opacity = 0.3 + Math.sin(this.bobPhase * 2) * 0.2;
+        }
+    }
+
+    canPickup(playerPosition) {
+        return this.distanceTo(playerPosition) < 3.5; // Increased pickup range
+    }
+
+    pickup() {
+        this.alive = false;
+        this.onDeath();
+        return true;
+    }
+}

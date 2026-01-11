@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { World } from './world.js';
 import { Controls } from './controls.js';
-import { FireDragon, FireJellyfish, TreasureBox } from './entities.js';
+import { FireDragon, FireJellyfish, TreasureBox, Zombie, MachineGun } from './entities.js';
 import { CombatSystem } from './combat.js';
 
 class Game {
@@ -48,6 +48,8 @@ class Game {
         this.entities = [];
         this.bosses = [];
         this.treasures = [];
+        this.zombies = [];
+        this.machineGun = null;
         this.spawnEntities();
 
         // Game state
@@ -133,9 +135,41 @@ class Game {
         const treasure2 = new TreasureBox(this.scene, new THREE.Vector3(-35, 5, -35));
         this.entities.push(treasure2);
         this.treasures.push(treasure2);
+
+        // Spawn machine gun near player spawn
+        this.machineGun = new MachineGun(this.scene, new THREE.Vector3(5, 7, 5));
+        this.entities.push(this.machineGun);
+
+        // Initial Zombie Spawn (Start with 2)
+        this.spawnRandomZombie();
+        this.spawnRandomZombie();
+    }
+
+    spawnRandomZombie() {
+        const angle = Math.random() * Math.PI * 2;
+        const radius = 15 + Math.random() * 25; // 15-40 units away
+        const bx = Math.floor(Math.cos(angle) * radius);
+        const bz = Math.floor(Math.sin(angle) * radius);
+
+        // Find ground height
+        let by = 20;
+        while (by > 0 && !this.world.hasBlock(bx, by - 1, bz)) {
+            by--;
+        }
+
+        // Default to 5 if no ground found (safety)
+        if (by === 0) by = 5;
+
+        const spawnPos = new THREE.Vector3(bx + 0.5, by + 1, bz + 0.5);
+        const zombie = new Zombie(this.scene, spawnPos);
+        this.entities.push(zombie);
+        this.zombies.push(zombie);
+        console.log(`Spawned zombie at ${bx}, ${by}, ${bz}`);
     }
 
     setupMouseEvents() {
+        this.isMouseDown = false;
+
         this.renderer.domElement.addEventListener('mousedown', (event) => {
             if (!this.controls.isLocked || this.gameState !== 'playing') return;
 
@@ -143,8 +177,15 @@ class Game {
 
             if (event.button === 0) {
                 // Left click - attack
+                this.isMouseDown = true;
+
+                // Fire immediately (for single shot or first shot)
                 this.combat.shootProjectile();
             }
+        });
+
+        this.renderer.domElement.addEventListener('mouseup', () => {
+            this.isMouseDown = false;
         });
 
         // Prevent context menu on right click
@@ -214,6 +255,57 @@ class Game {
         }
     }
 
+    updateZombieRadar(playerPos) {
+        const radarEl = document.getElementById('zombie-radar');
+        if (!radarEl || this.zombies.length === 0) {
+            if (radarEl) radarEl.textContent = "Searching...";
+            return;
+        }
+
+        // Find nearest zombie
+        let nearest = null;
+        let minDist = Infinity;
+
+        this.zombies.forEach(z => {
+            if (z.alive) {
+                const d = z.distanceTo(playerPos);
+                if (d < minDist) {
+                    minDist = d;
+                    nearest = z;
+                }
+            }
+        });
+
+        if (nearest) {
+            // Calculate direction relative to camera
+            const forward = new THREE.Vector3();
+            this.camera.getWorldDirection(forward);
+            forward.y = 0;
+            forward.normalize();
+
+            // Vector to zombie
+            const toZombie = new THREE.Vector3().subVectors(nearest.position, playerPos);
+            toZombie.y = 0;
+            toZombie.normalize();
+
+            const dot = forward.dot(toZombie);
+            const cross = new THREE.Vector3().crossVectors(forward, toZombie);
+
+            let dir = "";
+            if (dot > 0.707) dir = "Ahead ⬆️"; // 45 degrees
+            else if (dot < -0.707) dir = "Behind ⬇️";
+            else if (cross.y > 0) dir = "Left ⬅️"; // Left is positive Cross Y
+            else dir = "Right ➡️";
+
+            radarEl.textContent = `${Math.round(minDist)}m ${dir}`;
+
+            // Color code distance
+            if (minDist < 15) radarEl.style.color = "#ff0000"; // Red (Danger)
+            else if (minDist < 40) radarEl.style.color = "#ffa500"; // Orange
+            else radarEl.style.color = "#00ff00"; // Green (Safe)
+        }
+    }
+
     checkVictory() {
         // Check if all bosses are defeated
         const allBossesDefeated = this.bosses.every(boss => !boss.alive);
@@ -262,14 +354,51 @@ class Game {
             // Update combat
             this.combat.update(delta);
 
-            // Check projectile hits
-            this.combat.checkProjectileHits(this.bosses);
+            // Auto-fire for machine gun
+            if (this.isMouseDown && this.combat.hasMachineGun) {
+                this.combat.shootProjectile();
+            }
 
-            // Check monster attacks
-            this.combat.checkMonsterAttacks(this.bosses, playerPos);
+            // Check machine gun pickup
+            if (this.machineGun && this.machineGun.alive && this.machineGun.canPickup(playerPos)) {
+                this.combat.pickupMachineGun();
+                this.machineGun.pickup();
+                // Remove from entities array
+                const index = this.entities.indexOf(this.machineGun);
+                if (index > -1) {
+                    this.entities.splice(index, 1);
+                }
+                this.machineGun = null;
+            }
+
+            // Check projectile hits on all enemies (bosses + zombies)
+            const allEnemies = [...this.bosses, ...this.zombies];
+            this.combat.checkProjectileHits(allEnemies);
+
+            // Manage Zombies (Cleanup dead & Respawn)
+            for (let i = this.zombies.length - 1; i >= 0; i--) {
+                if (!this.zombies[i].alive) {
+                    // Remove from entities
+                    const idx = this.entities.indexOf(this.zombies[i]);
+                    if (idx > -1) this.entities.splice(idx, 1);
+                    this.zombies.splice(i, 1);
+                }
+            }
+
+            // Maintain 2 zombies (respawn if killed)
+            if (this.zombies.length < 2) {
+                this.spawnRandomZombie();
+            }
+
+            if (this.zombies.length < 2) {
+                this.spawnRandomZombie();
+            }
 
             // Update boss status UI
             this.updateBossStatus();
+
+            // Update Zombie Radar
+            this.updateZombieRadar(playerPos);
 
             // Check win/lose conditions
             this.checkVictory();

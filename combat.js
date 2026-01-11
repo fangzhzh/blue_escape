@@ -13,9 +13,18 @@ export class CombatSystem {
         this.particleEffects = [];
 
         // Player attack stats
-        this.attackDamage = 25;
+        this.baseDamage = 25;
+        this.machineGunDamage = 50; // 2x damage!
+        this.attackDamage = this.baseDamage;
         this.attackRange = 30;
-        this.projectileSpeed = 20;
+        this.baseProjectileSpeed = 40;
+        this.machineGunProjectileSpeed = 60; // Faster bullets!
+        this.projectileSpeed = this.baseProjectileSpeed;
+
+        // Machine gun properties
+        this.hasMachineGun = false;
+        this.baseAttackRate = 0.5;
+        this.machineGunAttackRate = 0.05; // 20 shots per second!
     }
 
     update(delta) {
@@ -70,7 +79,8 @@ export class CombatSystem {
     shootProjectile() {
         if (!this.canAttack()) return null;
 
-        this.attackCooldown = this.attackRate;
+        // Use machine gun rate if equipped, otherwise base rate
+        this.attackCooldown = this.hasMachineGun ? this.machineGunAttackRate : this.baseAttackRate;
 
         // Get camera direction
         const direction = new THREE.Vector3();
@@ -271,6 +281,26 @@ export class CombatSystem {
                 mesh: mesh,
                 lifetime: 0.3
             });
+        }
+    }
+
+    pickupMachineGun() {
+        this.hasMachineGun = true;
+        this.attackDamage = this.machineGunDamage; // Increase damage
+        this.projectileSpeed = this.machineGunProjectileSpeed; // Faster bullets
+        console.log('Machine gun equipped! Fire rate increased!');
+
+        // Update UI
+        const weaponStatus = document.getElementById('weapon-status');
+        if (weaponStatus) {
+            weaponStatus.textContent = 'Machine Gun ⚡ (50 DMG)';
+            weaponStatus.style.color = '#00ff00';
+
+            // Add flash effect
+            weaponStatus.style.textShadow = '0 0 10px #00ff00';
+            setTimeout(() => {
+                weaponStatus.style.textShadow = 'none';
+            }, 500);
         }
     }
 }
