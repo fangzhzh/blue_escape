@@ -23,3 +23,4 @@ npm-debug.log*
 # Python server cache
 __pycache__/
 *.pyc
+.vercel

@@ -173,7 +173,9 @@ minegraft_game/
 - ✅ Health and damage tracking
 - ✅ Victory/defeat conditions
 - ✅ Fixed spawn in clear area
+- ✅ Fixed spawn in clear area
 - ✅ **WASD movement without mouse lock**
+- ✅ **Mobile Support** (Touch controls & Virtual Joystick)
 
 ## 🎯 Future Ideas
 

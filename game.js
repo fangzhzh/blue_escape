@@ -3,6 +3,7 @@ import { World } from './world.js';
 import { Controls } from './controls.js';
 import { FireDragon, FireJellyfish, TreasureBox, Zombie, MachineGun } from './entities.js';
 import { CombatSystem } from './combat.js';
+import { MobileControls } from './mobile_controls.js';
 
 class Game {
     constructor() {
@@ -143,6 +144,9 @@ class Game {
         // Initial Zombie Spawn (Start with 2)
         this.spawnRandomZombie();
         this.spawnRandomZombie();
+
+        // Setup Mobile Controls
+        this.mobileControls = new MobileControls(this);
     }
 
     spawnRandomZombie() {
